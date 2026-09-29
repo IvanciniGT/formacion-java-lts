@@ -1,0 +1,2 @@
+melón=Fruto grande, redondo y de pulpa jugosa y dulce.|Persona con pocas luces.(Eres un melón)(No seas melón)
+pera=Fruto del peral.

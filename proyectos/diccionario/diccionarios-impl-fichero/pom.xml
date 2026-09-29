@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.curso.diccionario</groupId>
+        <artifactId>diccionario-padre</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>diccionarios-impl-fichero</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Diccionarios - Implementación en ficheros</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <!-- Las pruebas de contrato del API: esta implementación las hereda y las ejecuta.
+             Misma versión que el API: el contrato que se prueba es el que se implementa. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

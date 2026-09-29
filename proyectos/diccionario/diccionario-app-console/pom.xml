@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.curso.diccionario</groupId>
+        <artifactId>diccionario-padre</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>diccionario-app-console</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Diccionario - App de consola</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <!-- runtime y no compile: si alguien importa una clase de la implementación,
+             que no compile. La app solo la conoce a través del ServiceLoader. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-impl-fichero</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <!-- mvn exec:exec -Dargumentos="ES melón" -->
+        <argumentos></argumentos>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <skip>false</skip>
+                    <!-- Module path y no classpath: si no, module-info, provides/uses y los opens
+                         no se aplican y el ServiceLoader funcionaría por otras razones.
+                         ALL-MODULE-PATH: los jars de diccionarios no los requiere nadie, y un
+                         módulo que nadie requiere no se carga.
+                         %classpath es solo la lista de rutas (el token %modulepath no se sustituye en
+                         commandlineArgs); lo que la convierte en module path es la opción que la precede. -->
+                    <commandlineArgs>--module-path %classpath --add-modules ALL-MODULE-PATH --module app/com.curso.diccionario.app.consola.BuscarPalabra ${argumentos}</commandlineArgs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
