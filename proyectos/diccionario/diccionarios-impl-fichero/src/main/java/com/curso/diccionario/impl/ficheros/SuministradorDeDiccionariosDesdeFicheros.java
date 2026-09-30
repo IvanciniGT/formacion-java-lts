@@ -1,19 +1,26 @@
 package com.curso.diccionario.impl.ficheros;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.curso.diccionario.api.Diccionario;
+import com.curso.diccionario.api.Significado;
 import com.curso.diccionario.api.SuministradorDeDiccionarios;
 
-import java.util.Map;
-import java.util.WeakHashMap;
-
 import lombok.NonNull;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
 
 
 // La lectura de los archivos la hacemos en modo LAZY (cuando se pida la primera vez un diccionario de un idioma se lee el archivo)
@@ -25,6 +32,10 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
     static final String VARIABLE_DE_ENTORNO_CARPETA = "DICCIONARIOS_CARPETA";
     // Sin la variable, los diccionarios se buscan dentro de un jar del classpath, no en disco.
     static final String CARPETA_EN_CLASSPATH_POR_DEFECTO = "diccionarios/";
+    // Dentro de un jar no se puede listar una carpeta sin abrir el jar como sistema de ficheros:
+    // de momento, los idiomas que se buscan en el classpath van a capón.
+    static final List<String> IDIOMAS_EN_CLASSPATH = List.of("ES");
+    private static final String EXTENSION = ".txt";
 
     private final String carpetaConFicherosDeDiccionarios;
 
@@ -54,16 +65,22 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
 
     @Override
     public List<String> getIdiomas() {
-        throw new UnsupportedOperationException("Pendiente de implementar");
+        Path carpeta = Path.of(carpetaConFicherosDeDiccionarios);
+        if (!Files.isDirectory(carpeta)) {
+            // Se filtran para no anunciar un idioma cuyo fichero no esté en ningún jar.
+            return IDIOMAS_EN_CLASSPATH.stream().filter(this::tienesDiccionarioDe).toList();
+        }
+        try (Stream<Path> ficheros = Files.list(carpeta)) {
+            return ficheros.map(fichero -> fichero.getFileName().toString())
+                    // Un solo punto: es.prueba.txt no es el diccionario de un idioma "ES.PRUEBA".
+                    .filter(nombre -> nombre.endsWith(EXTENSION) && nombre.indexOf('.') == nombre.length() - EXTENSION.length())
+                    .map(nombre -> nombre.substring(0, nombre.length() - EXTENSION.length()).toUpperCase(Locale.ROOT))
+                    .toList();
+        } catch (IOException e) {
+            System.out.println("No se pudo listar la carpeta de diccionarios " + carpeta + ": " + e);
+            return List.of();
+        }
     }
-
-
-
-
-
-
-
-
 
     @Override
     public boolean tienesDiccionarioDe(@NonNull String idioma) {
@@ -83,22 +100,49 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
         // Si no está en cache, lo subo a cache.
         if(!cacheDeDiccionarios.containsKey(idioma)) {
             // Lo pongo en cache.... cargándolo del archivo.
-            Path fichero = getFicheroParaIdioma(idioma).get();
-            Map<String, List<Significado>> palabraConSignificados = cargarFichero(fichero);
-            cacheDeDiccionarios.put(idioma, new DiccionarioDesdeFichero(idioma, palabraConSignificados));
+            URL fichero = getFicheroParaIdioma(idioma).get();
+            try {
+                Map<String, List<Significado>> palabraConSignificados = cargarFichero(fichero);
+                cacheDeDiccionarios.put(idioma, new DiccionarioDesdeFichero(idioma, palabraConSignificados));
+            } catch (Exception e) {
+                // Por ahora nos la comemos: un fichero mal escrito se trata como si no hubiera diccionario.
+                System.out.println("No se pudo cargar el diccionario de " + idioma + " desde " + fichero + ": " + e);
+                return Optional.empty();
+            }
         }
         
         // Siempre devuelvo desde cache
         return Optional.of(cacheDeDiccionarios.get(idioma));
     }
 
-    private Optional<Path> getFicheroParaIdioma(String idioma) { 
-        // TODO
-        return null;
+    // URL y no Path: un fichero dentro de un jar no es un Path del disco, pero sí tiene URL.
+    private Optional<URL> getFicheroParaIdioma(String idioma) {
+        // Locale.ROOT: con el locale turco, "I".toLowerCase() no da "i".
+        String nombre = idioma.toLowerCase(Locale.ROOT) + EXTENSION;
+        Path carpeta = Path.of(carpetaConFicherosDeDiccionarios);
+        if (Files.isDirectory(carpeta)) {
+            Path fichero = carpeta.resolve(nombre);
+            if (!Files.isRegularFile(fichero)) {
+                return Optional.empty();
+            }
+            try {
+                return Optional.of(fichero.toUri().toURL());
+            } catch (MalformedURLException e) {
+                System.out.println("Ruta de diccionario no válida " + fichero + ": " + e);
+                return Optional.empty();
+            }
+        }
+        // El class loader y no esta clase: el jar con los diccionarios puede ser otro módulo.
+        // En el module path, ese módulo tiene que hacer "opens diccionarios" para que se vea.
+        return Optional.ofNullable(getClass().getClassLoader().getResource(carpetaConFicherosDeDiccionarios + nombre));
     }
 
-    private static Map<String, List<Significado>> cargarFichero(Path fichero) throws Exception{
-        return Files.readAllLines(fichero)                                                                                     // Leo las lineas del fichero
+    private static Map<String, List<Significado>> cargarFichero(URL fichero) throws IOException {
+        List<String> lineas;
+        try (InputStream entrada = fichero.openStream()) {
+            lineas = new String(entrada.readAllBytes(), StandardCharsets.UTF_8).lines().toList();
+        }
+        return lineas                                                                                                          // Las lineas del fichero
             .stream()                                                                                                          // Para cada linea
             .filter( linea -> !linea.trim().isEmpty() )                                                                        // Quito las lineas en blanco
             //.filter( linea -> linea.contains("=") )                                                                          // Para evitar problemas, requiero que las lineas tengan un =
@@ -111,7 +155,9 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
                                     textoConEjemplos -> {
                                         String[] partes                 = textoConEjemplos.split("\\(|\\)");                   // Partiendo para cada item por ()
                                         String texto                    = partes[0].trim();                                    // Lo de antes de los () es el significado
-                                        List<String> listadoEjemplos    = Arrays.stream(partes).skip(1).collect(Collectors.toList()); // Lo de detras de los () son los ejemplos
+                                        List<String> listadoEjemplos    = Arrays.stream(partes).skip(1)                        // Lo de detras de los () son los ejemplos
+                                                                              .filter(ejemplo -> !ejemplo.isBlank())   // ")(" deja un trozo vacío entre ejemplo y ejemplo
+                                                                              .collect(Collectors.toList());
                                         return new SignificadoDesdeFichero(texto, listadoEjemplos);                        // que uso para crear el Objeto SignificadoDesdeFichero
                                     }                                                         
                                 )   

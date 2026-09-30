@@ -9,9 +9,9 @@ public interface Diccionario {
 
     String getIdioma();
 
-    boolean existe(@NonNull String palabra);
+    boolean existe(@NonNull String palabra); // Puede generar error
 
     // Vacío si la palabra no existe; si existe, al menos un significado.
-    Optional<List<Significado>> getSignificados(@NonNull String palabra);
+    Optional<List<Significado>> getSignificados(@NonNull String palabra); // Puede generar error
 
 }

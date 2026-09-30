@@ -588,3 +588,93 @@ Map<String, List<Significado>> palabrasConSignificados =
                             .collect(Collectors.toList())                                                               // al final, entrego los significados como una lista
         ));
 ```
+
+
+---
+
+# Estado actual:
+
+- Componente app
+- Componente diccionario api
+- Componente diccionario impl fichero
+
+Podríamos querer ir evolucionando la app.
+Vamos a hacerle evoluciones.
+
+    Version actual: 1.0.0
+
+        Cliente
+        ----------------------------------------------------------------
+        app -> diccionariosapi -> diccionariosimplfichero
+                                        |
+                                        v
+                                   ficheros de diccionarios en local
+                                    es.txt
+                                    en.txt
+
+Y funciona!
+
+Tiene graves problemas de mantenibilidad y operación.
+Cualquier cambio en los ficheros de diccionarios requieren redistribuir la aplicacióny reinstalarla a todo el mundo = FOLLON!
+
+Además si hay incidencias hay que controlar (SOPORTE TECNICO) qué versión de los ficheros de diccionario estaba en uso en cada cliente que tenga incidencia.
+    = MUCHA PASTA!
+
+    Version nueva: 2.0.0
+
+    En esta versión: La lógica de los diccionarios (búsquedas) y los ficheros de diccionarios a un servidor central.
+
+
+        Cliente                                                     Servidor central de diccionarios
+        ---------------------------------------------------         ----------------------------------------------
+        app -> diccionariosapi -> diccionarionario-impl-rest ->     controlador-rest ----->     diccionariosapi  -> diccionariosimplfichero
+                                                                                                        |
+                                                                                                        v
+                                                                                                ficheros de diccionarios en local
+                                                                                                    es.txt
+                                                                                                    en.txt
+
+                                Que pasa?
+                             Sirve tal cual          No sirve para nada         Sirve pero con mofidicaciones
+app                               √
+diccionariosapi                   √
+diccionariosimplfichero           √
+
+Necesito 2 piezas nuevas, pero no tengo que tocar ni una linea dde código existente.
+
+Estas piezas nuevas son:
+- diccionarionario-impl-rest
+- controlador-rest
+
+
+    Version nueva:3.0.0
+
+        Cliente                                                     Servidor central de diccionarios
+        ---------------------------------------------------         ----------------------------------------------
+        app -> diccionariosapi -> diccionarionario-impl-rest ->     controlador-rest ----->     diccionariosapi  -> diccionariosimplbbdd
+                                                                                                                            |
+                                                                                                                            v
+                                                                                                                    ficheros de diccionarios 
+                                                                                                                    en local
+                                                                                                                        es.txt
+                                                                                                                        en.txt
+
+---
+
+
+
+- Componente app                            1.0.0
+- Componente diccionario api                1.0.0
+  - Al meter Exceptions que no había previsto      --> 1.1.0
+- Componente diccionario impl fichero       1.0.0
+
+Cada componente tiene su version independientes... Y POR ESO QUIERO 3 repos de git separados.
+
+
+
+---
+
+vA.B.C   <- Esquema semántico de versiones    semver
+    A: Major (breaking changes)
+    B: Minor (nuevas funcionalidades compatibles)
+    C: Patch (corrección de errores)
