@@ -1,0 +1,470 @@
+# Modelo de programación map reduce.. y algunas de sus funciones
+
+Vamos a empezar por la función map y la función reduce.
+
+
+## Concepto general
+
+Partimos de una colección sobre la que podemos aplicar MapReduce (en java: Streams).
+
+    Stream<Integer> numeros = Stream.of(1, 2, 3, 4, 5);
+
+
+Imaginad que quiero una coleccion nueva con el doble de los números
+En java tradicional:
+
+```java
+List<Integer> numeros = List.of(1, 2, 3, 4, 5);
+
+List<Integer> dobles = new ArrayList<>();
+for(Integer n : numeros) {
+    dobles.add(n * 2);
+}
+```
+
+
+En los Streams tenemos un método llamado map... Ese método permite transformar uno a uno todos los elementos de una colecció, para dar lugar a otra coleccion, con los elementos transformados.
+La gracia es que nosotros aportamos la lógica de transformación, y el método map se encarga de aplicarla:
+Es algo así como si el método map por dentro hicier:
+```java
+public List<R> map(List<T> originales, Function<T, R> funcionDeMapeo) {
+    List<R> transformados = new ArrayList<>();
+    for(T o : originales) {
+        transformados.add(funcionDeMapeo.aplicar(o));
+    }
+    return transformados;
+}
+```
+
+Con streams y programación mapReduce:
+```java
+
+    public Integer doble(Integer numero) {
+        return numero * 2;
+    }
+
+    Stream<Integer> numeros = Stream.of(1, 2, 3, 4, 5);
+    numeros.map(  MiClase::doble  );
+
+
+
+
+    Stream<Integer> numeros = Stream.of(   1, 2, 3, 4, 5         ); // [1,2,3,4,5]
+    Stream<Integer> dobles = numeros.map(  numero -> numero * 2  ); // [2,4,6,8,10]
+    // Todo algoritmo ram-reduce, debe acabar con una función de reducción.
+    int sumatorio = dobles.reduce(0, (a, b) -> a + b);
+
+        // Partimos de estos numeros : 2,4,6,8,10
+        // Y los juntamos 2 a 2 usando la suma
+        // 2 + 8 = 10
+        // 10 + 6 = 16
+        // 10 + 16 = 26
+        // 26 + 4 = 30
+
+Lo que hemos hecho es un sumatorio de los números.
+Podríamos hacer un count, mediante una fucnión de reducción que sume 1 por cada elemento.
+    long count = dobles.reduce(0, (a, b) -> a + 1);
+
+Esto normalmente no lo hacemos... ya existe una función llamada count:
+    long count = dobles.count(); (por dentro lo que hace es esa reducción)
+```
+
+Operación conmutativa en matemáticas (2 operandos)
+
+    a * b == b * a
+    a + b == b + a
+
+Operación asociativa en matemáticas (3 operandos)
+
+    (a * b) * c == a * (b * c)
+    (a + b) + c == a + (b + c)  
+
+
+---
+
+Colección inicial     map     Colección intermedia  map     Colección intermedia 2     filter            Colección intermedia 3
+--------------------> x2 --------------------------> -2  --------------------------> (predicado) --------------------------------> SUMA -> 20
+1                                   2                                0                  n>5                     6
+2                                   4                                2                                          14
+3                                   6                                4
+4                                   8                                6
+8                                   16                               14
+
+Cómo haríamos esto en programación tradicional:
+
+# Opción 1... Muy ineficiente... 4 bucles?
+
+```java
+List<Integer> numeros = List.of(1, 2, 3, 4, 8);
+
+List<Integer> dobles = new ArrayList<>();
+for(Integer numero : numeros) {
+    dobles.add(numero * 2);
+}
+
+List<Integer> menosDos = new ArrayList<>();
+for(Integer numero : dobles) {
+    menosDos.add(numero - 2);
+}
+
+List<Integer> mayoresDeCinco = new ArrayList<>();
+for(Integer numero : menosDos) {
+    if(numero > 5) {
+        mayoresDeCinco.add(numero);
+    }
+}
+
+int suma = 0;
+for(Integer numero : mayoresDeCinco) {
+    suma += numero;
+}
+System.out.println(suma); // 20
+```
+
+# Opción 2... más eficiente: 1 solo bucle!
+
+```java
+List<Integer> numeros = List.of(1, 2, 3, 4, 8);
+int suma = 0;
+for(Integer numero : numeros) {
+    int doble = numero * 2;
+    int menosDos = doble - 2;
+    if(menosDos > 5) {
+        suma += menosDos;
+    }
+}
+System.out.println(suma); // 20
+```
+
+
+# Con Streams:
+
+```java
+int suma = numeros.stream()
+    .map(numero -> numero * 2)
+    .map(numero -> numero - 2)
+    .filter(numero -> numero > 5)
+    .reduce(0, Integer::sum);
+System.out.println(suma); // 20
+```
+ Si esto se comporta como os he dicho arriba, sería eficiente? NADA!
+
+ Algo no encaja si resulta que este modelo de progamación se inventó precisamente para hacer operaciones sobre volumenes gigantes de datos.
+ Gigantes: Billones de elementos.
+
+
+Hay truco.
+
+Imaginad una colección de 1 billón de elementos.
+Y le aplico las transformaciones;
+```java
+    Stream<Integer> original = Stream.of(1, 2, 3, 4, 8 /* ... y así un cien mil billones */); // 100.000.000.000.000.000
+    Stream<Integer> dobles = original.map( numero -> numero * 2 );                        // Cuánto pensaís que tardaría en ejecutarse esta operación?
+    Stream<Integer> menosDos = dobles.map( numero -> numero - 2 );                                  // Más de 1 segundo
+    Stream<Integer> mayoresDeCinco = menosDos.filter( numero -> numero > 5 );                       // Más de 1 minuto
+    int suma = mayoresDeCinco.reduce( 0, Integer::sum );                                            // Más de 1 hora
+```
+
+Stream<Integer> dobles = original.map( numero -> numero * 2 );                        // Cuánto pensaís que tardaría en ejecutarse esta operación?
+NO TARDA NADA! Nada es nada! nanosegundos
+
+Cómo puede ser?
+
+Las funciones map ... y es la gracia del modelo de programaicón map-reduce, se ejecutan en modo LAZY (perezoso). Es decir, no se ejecutan realmente hasta que su resultado es necesario.
+original.map( numero -> numero * 2 );  ESTO NO HA MULTIPLICADO x2 los números.
+                                        Lo único que ha hecho es apuntar que sobre los números hay que hacer la operación x2
+
+Si os imagináis la colección original como una carpeta llena de papeles (datos), loúnico que ha hecho la función map es DEVOLVER LA MISMA CARPETA con un postit en la caratura que dice:
+    ANTES DE USAR , MULTIPLICAR x 2
+
+dobles.map( numero -> numero - 2 );  
+
+    NUEVO POSIT ENCIMA DEL ANTERIOR, que dice: 
+    ANTES DE USAR , RESTAR 2
+
+menosDos.filter( numero -> numero > 5 ); 
+
+    NUEVO POSIT ENCIMA DEL ANTERIOR, que dice: 
+    ANTES DE USAR , COMPROBAR SI ES MAYOR QUE 5, s no lo es, descartar EL ELEMENTO
+
+mayoresDeCinco.reduce( 0, Integer::sum ); Y AQUI EMPIEZA LA FIESTA
+
+Las funciones de tipo reduce se ejecutan en modo eager (ansioso). Es decir, se ejecutan inmediatamente.
+
+Pero claro.. para sumar los números, necesito los números que tengo que sumar... 
+y para ello necesito saber si son mayores que 5 o no
+Pero para saber si son mayores que 5, primero tengo que restarles 2...
+Pero para restarles 2, primero tengo que multiplicarlos por 2...
+
+La función reduce es la que finalmente dispara la ejecución de todas las operaciones anteriores. Es decir, hasta que no llamamos a reduce, las operaciones map y filter no se ejecutan realmente.
+
+Y es al aplicar la función reduce cuando el motor de procesamiento map-reduce decide la forma en la que aplica todas las operaciones pendientes (map y filter) sobre los datos.
+
+Y sería algo así:
+```java
+    List<Integer>  original = List.of(1, 2, 3, 4, 8 /* ... y así un cien mil billones */); // 100.000.000.000.000.000
+    int suma = 0;
+    for (Integer numero : original) {
+        if(mayorQueCinco(menos2(doble(numero)))) {
+            suma += doble(numero);
+        }
+    }
+```
+
+El motor de procesamiento no hace 4 bucles... Lo optimiza y hace 1.
+Y el resultado de una operación map, lo pasa como entrada a la siguiente operación (ya sea otro map, un filter o un reduce).
+
+
+Cuando entendemos la mecánica, es muy simple transformar datos mediante Map-Reduce.
+Eso si.. necesitamos sobre todo:
+    1. Familiaridad con la sintxis de programación funcional en Java.
+    2. Conocer las funciones map y reduce que tenemos disponibles en Java.
+
+---
+
+# Vamos a montar el sistema de trending topics de twitter (X)
+
+Lo que haremos será analizar y procesar los tweets que van llegando a lo largo del tiempo (en una hora). Extraeré sus hashtags y contaremos cuántas veces aparece cada uno para determinar cuáles son los trending topics.
+
+> Colección inicial:
+
+ - En la playa con mis amigos #SummerLove#GoodVibes
+ - Disfrutando de un café en la mañana #CoffeeTime #GoodVibes
+ - Noche de películas de miedo con amigos #MovieNight#Friends#MierdaDeMiedo
+ - Caminata por el parque #NatureLovers#HealthyLiving. #GoodVibes
+
+Lista de palabras prohibidas: CASA, CULO, PEDO, PIS, MIERDA!
+Si un hashtag contiene una de esas palabras... fuera de la lista.. que somo americanos y por ende Superiores moralmente al resto de los individuos, lo descartaremos automáticamente.
+
+> Resultado esperado:
+  Tabla:
+  | Hashtag.      | Veces   |
+  |---------------|---------|
+  | GoodVibes     | 3       |
+  | SummerLove    | 1       |
+  | CoffeeTime    | 1       |
+  | MovieNight    | 1       |
+  | Friends       | 1       |
+  ----------------------------- Queremos solo los 5 primeros
+
+---
+
+# Procedimiento:
+
+> PARTIMOS DE: 
+ - "En la playa con mis amigos #SummerLove#GoodVibes"
+ - "Disfrutando de un café en la mañana #CoffeeTime #GoodVibes"
+ - "Noche de películas de miedo con amigos #MovieNight#Friends#MierdaDeMiedo"
+ - "Caminata por el parque #NatureLovers#HealthyLiving. #GoodVibes"
+
+    List<String> Donde cada String era un tweet original.
+
+> Paso0: replace ("#", " #")      TRANSFORMAR UN ELEMENTO EN OTRO: Función MAP
+ - "En la playa con mis amigos  #SummerLove #GoodVibes"
+ - "Disfrutando de un café en la mañana  #CoffeeTime #GoodVibes"
+ - "Noche de películas de miedo con amigos  #MovieNight #Friends #MierdaDeMiedo"
+ - "Caminata por el parque  #NatureLovers #HealthyLiving.  #GoodVibes"
+
+    List<String> Donde cada String es un tweet, con hashtags separados entre si
+
+> Paso 1: split(por todo lo que no sea una letra ni un #)      TRANSFORMAR UN ELEMENTO EN OTRO: Función MAP treet -> Lista de términos
+ - ["En", "la", "playa", "con", "mis", "amigos", "#SummerLove", "#GoodVibes"]
+ - ["Disfrutando", "de", "un", "café", "en", "la", "mañana", "#CoffeeTime", "#GoodVibes"]
+ - ["Noche", "de", "películas", "de", "miedo", "con", "amigos", "#MovieNight", "#Friends", "#MierdaDeMiedo"]
+ - ["Caminata", "por", "el", "parque", "#NatureLovers", "#HealthyLiving", "#GoodVibes"]
+
+    List<List<String>>   Donde cada String es una palabra o un hashtag del tweet correspondiente.
+
+> Paso 2: Juntar todas esas listas en una sola lista      NO TRANSFORMO UNA LISTA EN OTRA COSA... Esto es otro tema... Estamos juntando listas... en una
+>                                                         Esta operación en map-reduce se denomina flatten -> Aplanado
+>                                                         En Java Streams, no existe la función flatte per sé. Existe flatMap = .map + .flatten
+
+    - En
+    - La
+    - Playa
+    - Con
+    - Mis
+    - Amigos
+    - #SummerLove
+    - #GoodVibes
+    - Disfrutando
+    - De
+    - Un
+    - Café
+    - En
+    - La
+    - Mañana
+    - #CoffeeTime
+    - #GoodVibes
+    - Noche
+    - De
+    - Películas
+    - De
+    - Miedo
+    - Con
+    - Amigos
+    - #MovieNight
+    - #Friends
+    - #MierdaDeMiedo
+    - Caminata
+    - Por
+    - El
+    - Parque
+    - #NatureLovers
+    - #HealthyLiving
+    - #GoodVibes
+
+    List<String>   Donde cada String es una palabra o un hashtag de todos los tweets, en una sola lista.
+
+> Paso 3: Quedarme con los hashtags      FILTRAR ELEMENTOS DE UNA LISTA: Función FILTER      .startsWith("#")
+
+    - #SummerLove
+    - #GoodVibes
+    - #CoffeeTime
+    - #GoodVibes
+    - #MovieNight
+    - #Friends
+    - #MierdaDeMiedo
+    - #NatureLovers
+    - #HealthyLiving
+    - #GoodVibes
+
+    List<String>   Donde cada String es un hashtag de todos los tweets, en una sola lista.
+
+> Paso 4: Quitar los hashtags malsonantes FILTRO:
+
+    Necesito mirar el qué? No es mirar si el hastag está en la lista de as palabras prohibidas...
+    Es mirar si alguna palabra de la lista de palabras prohibidas está contenida en el hashtag.
+
+        ["Caca","Culo","Pedo", "Pis", "Mierda"] -> Filter( palabraProhibida -> hashtag.contains(palabraProhibida)) ->
+         ["Mierda"] -> count() > 0
+         Si el count es mayor es cero, no quiero el hashtag, lo filtro.
+
+            hashtags.filter( hashtag -> palabrasProhibidas.filter( palabraProhibida -> hashtag.contains(palabraProhibida)).count() == 0)
+                             No necesito escribir este chorizo.... Hay una función que me resuelve la papeleta: anyMatch
+
+                             anyMatch hace un filter, seguido de un count() > 0, pero de manera más eficiente.
+
+                             noneMatch hace un filter seguido de un count() == 0
+
+                             allMatch hace un filter seguido de un count() == total, es decir, todos cumplen la condición.
+
+                             Hay luego muchas operaciones map/Reduce que son combinaciones de funciones map reduce simples.
+
+
+    - #SummerLove
+    - #GoodVibes
+    - #CoffeeTime
+    - #GoodVibes
+    - #MovieNight
+    - #Friends
+    - #NatureLovers
+    - #HealthyLiving
+    - #GoodVibes
+
+    List<String>   Donde cada String es un hashtag politicamente correcto, como nosotros
+
+> Paso 5: Quitar los # de los hashtags para quedarme solo con las palabras clave  MAP -> hashtag.substring(1)
+
+    - SummerLove
+    - GoodVibes
+    - CoffeeTime
+    - GoodVibes
+    - MovieNight
+    - Friends
+    - NatureLovers
+    - HealthyLiving
+    - GoodVibes
+
+    List<String>   Donde cada String es un tema! / TOPIC
+
+> Paso 6 : Contar la frecuencia de cada tema  GROUP BY -> count
+
+    - SummerLove: 1
+    - GoodVibes: 3
+    - CoffeeTime: 1
+    - MovieNight: 1
+    - Friends: 1
+    - NatureLovers: 1
+    - HealthyLiving: 1
+
+> Paso 7: Ordenar los temas por frecuencia  SORT BY -> count() DESC
+
+    - GoodVibes: 3
+    - SummerLove: 1
+    - CoffeeTime: 1
+    - MovieNight: 1
+    - Friends: 1
+    - NatureLovers: 1
+    - HealthyLiving: 1
+
+> Paso 7.5 .limit(5)      Quedarme solo los 5 temas más frecuentes
+
+    - GoodVibes: 3
+    - SummerLove: 1
+    - CoffeeTime: 1
+    - MovieNight: 1
+    - Friends: 1
+
+> Paso 8: Transformar los datos en un formato adecuado para visualización o exportación  MAP -> (tema, frecuencia) -> { "tema": tema, "frecuencia": frecuencia }
+   REDUCCION!
+
+
+---
+
+# Sorpresa sorpresa!
+
+```java
+int suma = numeros.stream()  // Con un billón de elementos
+    .map(numero -> numero * 2)
+    .map(numero -> numero - 2)
+    .filter(numero -> numero > 5)
+    .reduce(0, Integer::sum);
+System.out.println(suma); // 20
+```
+
+Quiero multiplicarlos, restarles cosas, compararlos, sumarlos...
+
+Qué recurso hardware de mi máquina estoy llevando al límite?
+Mejor dicho..  cuál es el recurso limitante para que esto vaya rápido!
+
+Pura CPU... RAM necesito la suficiente para poner los datos... MAS RAM no mejora rendimiento.
+
+Más CPU que le eche a la máquina si mejoraría el rendimiento?
+> Qué significa más cpu?
+
+Tengo un cpu i5 cojonudo (2 cores con hyperthreading) a una velocidad de 3.5 GHz.
+Tengo un cpu xeon cojonudo.. como el mio: 
+        2,3 GHz Intel Xeon W de 18 núcleos (con hyperthreading)
+
+Donde más rápido? En el i5.
+Y de hecho, no veríamos pasar en el i5 la cpu del 25%      y se pasaría 20 minutos...
+Y en mi máquina no veríamos pasar la cpu del 1/36% = 3%... y se pasaría 30 minutos...
+
+Por qué pasa esto? Poque nuestro programa cántos hilos está ejecutando? Threads? 1
+Y 1 hilo se ejecuta en un solo core de la CPU... y de hecho ni consume el 100% del core... si tiene hyperthreading, solo el 50% del core.
+ABSURDO.. Me hegastado una pasta en cpu... y estoy como un pendejo calentando silla esperando con la cpu al 3%? 
+
+Para aprovechar la potencia de cálculo de mi cpu, necesitaría abrir 36 hilos concurrentes.
+Para aprovechar la de un i5 con 2 cores y hyperthreading, necesitaría abrir 4 hilos concurrentes.
+
+Qué tal lo de abrir hilos en java? Y sincronizar resultados/procesos....? Es fácil? NADA FACIL.
+Tendría que manejar `Thread`, `Runnable`, `synchronized`, `Locks`, `Executors`... un lío.
+
+Ahora bien... con los Streams (Y el modelo de programación map-reduce) se han lucido.
+Para esto nace el modelo de programación map-reduce....
+Es un. modelo que soporta nativamente la ejecución paralela de operaciones sobre grandes volúmenes de datos, distribuyendo el trabajo entre múltiples hilos de manera eficiente.
+
+
+
+```java
+int suma = numeros //.stream().parallel()  
+    .parallelStream()
+    .map(numero -> numero * 2)
+    .map(numero -> numero - 2)
+    .filter(numero -> numero > 5)
+    .reduce(0, Integer::sum);
+System.out.println(suma); // 20
+```
+
+Eso ya en automático abre tantos hilos como cores tenga mi CPU, aprovechando al máximo la capacidad de procesamiento paralelo disponible. Internamente lo gestiona todo!

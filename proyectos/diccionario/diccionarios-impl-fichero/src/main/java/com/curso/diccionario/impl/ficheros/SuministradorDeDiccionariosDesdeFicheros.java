@@ -63,7 +63,7 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
     @Override
     public boolean tienesDiccionarioDe(@NonNull String idioma) {
         // 1. Comprobar si el diccionario está en la cache.
-        if(cache.containsKey(idioma)) {
+        if(cacheDeDiccionarios.containsKey(idioma)) {
             return true;
         }
         // 2. Si no está en cach, comprobar si existe el fichero correspondiente en la carpeta.
@@ -76,12 +76,12 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
             return Optional.empty();
         }
         // Si no está en cache, lo subo a cache.
-        if(!cache.containsKey(idioma)) {
+        if(!cacheDeDiccionarios.containsKey(idioma)) {
             // Lo pongo en cache.... cargándolo del archivo.
         }
         
         // Siempre devuelvo desde cache
-        return cache.get(idioma);
+        return cacheDeDiccionarios.get(idioma);
     }
 }
 
