@@ -468,3 +468,123 @@ System.out.println(suma); // 20
 ```
 
 Eso ya en automático abre tantos hilos como cores tenga mi CPU, aprovechando al máximo la capacidad de procesamiento paralelo disponible. Internamente lo gestiona todo!
+
+
+---
+
+Necesitamos leer cada linea    
+
+- OPCION 1:    Files.readAllLines(Paths.get("coleccion_inicial.txt")).stream()
+- OPCION 2:    Files.readString(Paths.get("coleccion_inicial.txt")).lines()
+
+> FICHERO: COLECCION INICIAL
+
+- "melón=Fruto grande, redondo y de pulpa jugosa y dulce.|Persona con pocas luces.(Eres un melón)(No seas melón)"
+- "banco=Asiento largo en el que caben varias personas.(Nos sentamos en un banco del parque)|Entidad que guarda dinero y concede préstamos.(He pedido una hipoteca al banco)|Conjunto numeroso de peces que nadan juntos.(Vimos un banco de sardinas)"
+- "gato=Mamífero felino doméstico.(El gato duerme en el sofá)|Herramienta para levantar pesos, sobre todo coches.(Saca el gato del maletero para cambiar la rueda)|Persona nacida en Madrid.(Mi abuela es gata de toda la vida)"
+- "hoja=Órgano verde y plano de las plantas.(En otoño se caen las hojas)|Lámina de papel.(Dame una hoja para apuntarlo)|Cuchilla de un arma o herramienta.(La hoja del cuchillo está mellada)"
+- "sierra=Herramienta con una hoja dentada para cortar.(Corta la tabla con la sierra)|Cordillera de montes.(Pasamos el fin de semana en la sierra)"
+- "cabo=Extremo de una cosa.(Ata los dos cabos de la cuerda)|Lengua de tierra que entra en el mar.(Llegamos al cabo de Gata)|Militar de rango inmediatamente superior al soldado.(El cabo pasó revista)"
+
+---
+
+> PASO 1: generar el mapa!
+
+    lineas.collect(Collectors.toMap( funcionQueGeneraLaClaveDesdeElContenidoOriginal , funcionQueGeneraElValorDesdeElContenidoOriginal ));
+                                        linea -> linea.split("=")[0]
+    // No hay funcones map... aplicamos directa la función reduce
+
+---
+
+
+> RESULTADO:
+
+Map<String, List<Significado>> 
+    String            =  palabra (linea.split("=")[0])
+    List<Significado> =  ???
+
+
+funcionQueGeneraElValorDesdeElContenidoOriginal                     Debe recibir la linea entera y devolver una List<Significado>
+    linea => "melón=Fruto grande, redondo y de pulpa jugosa y dulce.|Persona con pocas luces.(Eres un melón)(No seas melón)"    
+
+        linea -> linea.split("=")[1]
+
+               "Fruto grande, redondo y de pulpa jugosa y dulce.|Persona con pocas luces.(Eres un melón)(No seas melón)"
+        
+            .split("\\|")
+
+                [
+                    "Fruto grande, redondo y de pulpa jugosa y dulce.",         ---> Cada linea hay que transformarla en un objeto SignificadoDesdeFichero
+                    "Persona con pocas luces.(Eres un melón)(No seas melón)"
+                ] 
+
+                Lo qwue devuelve split es un array... me interesa transformarlo en un String[] -> Stream<String> (para poder aplicar map reduce  y transformar los strings en objetos SignificadoDesdeFichero) Y a su vez transformar el String[] -> List<SignificadoDesdeFichero>
+
+                String[] -> Stream<String> ... lo podemos hacer con Arrays.stream(array)
+
+        Arrays.stream(linea.split("=")[1].split("\\|"))         -> Stream<String>            Donde cada String es una linea con significado + ejemplos todo junto...
+
+        El trabajo ahora es convertir cada String del Stream<String> en un List<SignificadoDesdeFichero>
+        Y para eso aplicamos un MAP.
+
+
+        Necesito una funcion que reciba un String con significado + ejemplos y devuelva un objeto SignificadoDesdeFichero.
+
+        Arrays.stream(linea.split("=")[1].split("\\|")).map( FUNCION_GENERACION_SIGNIFICADO ).collect(Collectors.toList());
+
+
+        FUNCION_GENERACION_SIGNIFICADO 
+            Recibe: STRING               "Persona con pocas luces.(Eres un melón)(No seas melón)"
+            Devuelve:                    SignificadoDesdeFichero
+
+                                         new SignificadoDesdeFichero(texto, listaEjemplos)
+
+
+```java
+public Significado generarSignificadoDesdeTexto(String textoConEjemplos) {
+    String[] partes                 = textoConEjemplos.split("\\(|\\)");
+    String texto                    = partes[0].trim();
+                                        //  ["Persona con pocas luces.","Eres un melón)","No seas melón)"]
+    List<String> listadoEjemplos    = Arrays.stream(partes).skip(1).collect(Collectors.toList()); // tengo que quitar el primero
+                                    // ["Persona con pocas luces.","Eres un melón","No seas melón"]
+
+    return new SignificadoDesdeFichero(texto, listadoEjemplos);
+}
+
+
+
+textoConEjemplos -> {
+    String[] partes                 = textoConEjemplos.split("\\(|\\)");
+    String texto                    = partes[0].trim();
+    List<String> listadoEjemplos    = Arrays.stream(partes).skip(1).collect(Collectors.toList()); // tengo que quitar el primero
+    return new SignificadoDesdeFichero(texto, listadoEjemplos);
+}
+
+
+
+```
+
+//public record SignificadoDesdeFichero(String texto, List<String> ejemplos) implements Significado {}
+
+Resultado final:
+```java
+
+Map<String, List<Significado>> palabrasConSignificados = 
+   Files.readAllLines(Paths.get("coleccion_inicial.txt"))                                                                  // Leo las lineas del fichero
+        .stream()                                                                                                          // Para cada linea
+        .filter( linea -> !linea.trim().isEmpty() )                                                                        // Quito las lineas en blanco
+        .collect(Collectors.toMap(                                                                                         // Convierto enentradas de un mapa
+            linea -> linea.split("=")[0] ,                                                                                 // Cuya clave es la palabra (lo de antes del "=")
+                                                                                                                           // Cuyo valor es una lista de significados
+            linea -> Arrays.stream(linea.split("=")[1].split("\\|"))                                                       // Cojo lo de detras del = y separo por |
+                            .map(                                                                                          // Transformo ese array
+                                textoConEjemplos -> {
+                                    String[] partes                 = textoConEjemplos.split("\\(|\\)");                   // Partiendo para cada item por ()
+                                    String texto                    = partes[0].trim();                                    // Lo de antes de los () es el significado
+                                    List<String> listadoEjemplos    = Arrays.stream(partes).skip(1).collect(Collectors.toList()); // Lo de detras de los () son los ejemplos
+                                    return new SignificadoDesdeFichero(texto, listadoEjemplos);                        // que uso para crear el Objeto SignificadoDesdeFichero
+                                }                                                         
+                            )   
+                            .collect(Collectors.toList())                                                               // al final, entrego los significados como una lista
+        ));
+```

@@ -11,6 +11,11 @@ import java.util.WeakHashMap;
 
 import lombok.NonNull;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+
+
 // La lectura de los archivos la hacemos en modo LAZY (cuando se pida la primera vez un diccionario de un idioma se lee el archivo)
 // Y se cachea en memoria.
 // Siguientes peticiones hacen uso de cache!
@@ -62,12 +67,12 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
 
     @Override
     public boolean tienesDiccionarioDe(@NonNull String idioma) {
-        // 1. Comprobar si el diccionario está en la cache.
-        if(cacheDeDiccionarios.containsKey(idioma)) {
-            return true;
-        }
-        // 2. Si no está en cach, comprobar si existe el fichero correspondiente en la carpeta.
-        
+        return cacheDeDiccionarios.containsKey(idioma)  ||  getFicheroParaIdioma(idioma).isPresent();
+        /*
+            if(cacheDeDiccionarios.containsKey(idioma))
+                return true;
+            return getFicheroParaIdioma(idioma).isPresent();
+         */
     }
 
     @Override
@@ -78,11 +83,42 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
         // Si no está en cache, lo subo a cache.
         if(!cacheDeDiccionarios.containsKey(idioma)) {
             // Lo pongo en cache.... cargándolo del archivo.
+            Path fichero = getFicheroParaIdioma(idioma).get();
+            Map<String, List<Significado>> palabraConSignificados = cargarFichero(fichero);
+            cacheDeDiccionarios.put(idioma, new DiccionarioDesdeFichero(idioma, palabraConSignificados));
         }
         
         // Siempre devuelvo desde cache
-        return cacheDeDiccionarios.get(idioma);
+        return Optional.of(cacheDeDiccionarios.get(idioma));
     }
+
+    private Optional<Path> getFicheroParaIdioma(String idioma) { 
+        // TODO
+        return null;
+    }
+
+    private static Map<String, List<Significado>> cargarFichero(Path fichero) throws Exception{
+        return Files.readAllLines(fichero)                                                                                     // Leo las lineas del fichero
+            .stream()                                                                                                          // Para cada linea
+            .filter( linea -> !linea.trim().isEmpty() )                                                                        // Quito las lineas en blanco
+            //.filter( linea -> linea.contains("=") )                                                                          // Para evitar problemas, requiero que las lineas tengan un =
+                        // Esto es una ñapa... se come silenciosamente un error de sintaxis del fichero de diccionario
+            .collect(Collectors.toMap(                                                                                         // Convierto enentradas de un mapa
+                linea -> linea.split("=")[0] ,                                                                                 // Cuya clave es la palabra (lo de antes del "=")
+                                                                                                                               // Cuyo valor es una lista de significados
+                linea -> Arrays.stream(linea.split("=")[1].split("\\|"))                                                       // Cojo lo de detras del = y separo por |
+                                .map(                                                                                          // Transformo ese array
+                                    textoConEjemplos -> {
+                                        String[] partes                 = textoConEjemplos.split("\\(|\\)");                   // Partiendo para cada item por ()
+                                        String texto                    = partes[0].trim();                                    // Lo de antes de los () es el significado
+                                        List<String> listadoEjemplos    = Arrays.stream(partes).skip(1).collect(Collectors.toList()); // Lo de detras de los () son los ejemplos
+                                        return new SignificadoDesdeFichero(texto, listadoEjemplos);                        // que uso para crear el Objeto SignificadoDesdeFichero
+                                    }                                                         
+                                )   
+                                .collect(Collectors.toList())                                                               // al final, entrego los significados como una lista
+            ));
+    }
+
 }
 
 
