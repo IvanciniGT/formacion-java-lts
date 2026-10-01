@@ -82,18 +82,32 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
         }
     }
 
+    // Esta se borrará!
     @Override
     public boolean tienesDiccionarioDe(@NonNull String idioma) {
-        return cacheDeDiccionarios.containsKey(idioma)  ||  getFicheroParaIdioma(idioma).isPresent();
-        /*
-            if(cacheDeDiccionarios.containsKey(idioma))
-                return true;
-            return getFicheroParaIdioma(idioma).isPresent();
-         */
+        try {
+            return tienesDiccionarioDeIdioma(idioma);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
+    public boolean tienesDiccionarioDeIdioma(@NonNull String idioma) throws Exception{
+        return cacheDeDiccionarios.containsKey(idioma)  ||  getFicheroParaIdioma(idioma).isPresent();
+    }
+
+    @Override
+    // Esa se borrará
     public Optional<Diccionario> getDiccionario(@NonNull String idioma) {
+        try {
+            return getDiccionarioBuena(idioma);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+    @Override
+    public Optional<Diccionario> getDiccionarioBuena(@NonNull String idioma) throws Exception {
         if(!tienesDiccionarioDe(idioma)) {
             return Optional.empty();
         }
@@ -101,14 +115,8 @@ public class SuministradorDeDiccionariosDesdeFicheros implements SuministradorDe
         if(!cacheDeDiccionarios.containsKey(idioma)) {
             // Lo pongo en cache.... cargándolo del archivo.
             URL fichero = getFicheroParaIdioma(idioma).get();
-            try {
-                Map<String, List<Significado>> palabraConSignificados = cargarFichero(fichero);
-                cacheDeDiccionarios.put(idioma, new DiccionarioDesdeFichero(idioma, palabraConSignificados));
-            } catch (Exception e) {
-                // Por ahora nos la comemos: un fichero mal escrito se trata como si no hubiera diccionario.
-                System.out.println("No se pudo cargar el diccionario de " + idioma + " desde " + fichero + ": " + e);
-                return Optional.empty();
-            }
+            Map<String, List<Significado>> palabraConSignificados = cargarFichero(fichero);
+            cacheDeDiccionarios.put(idioma, new DiccionarioDesdeFichero(idioma, palabraConSignificados));
         }
         
         // Siempre devuelvo desde cache

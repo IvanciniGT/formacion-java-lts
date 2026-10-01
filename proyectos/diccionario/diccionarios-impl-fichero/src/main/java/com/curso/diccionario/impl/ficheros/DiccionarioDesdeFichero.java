@@ -5,6 +5,9 @@ import java.util.Optional;
 
 import com.curso.diccionario.api.Diccionario;
 import com.curso.diccionario.api.Significado;
+import com.curso.diccionario.api.ResultadoDeBusquedaDePalabra;
+import com.curso.diccionario.api.PalabraNoEncontrada;
+import com.curso.diccionario.api.PalabraEncontrada;
 
 import lombok.NonNull;
 import lombok.Getter;
@@ -22,18 +25,39 @@ public class DiccionarioDesdeFichero implements Diccionario {
         this.palabrasYSignificados = palabrasYSignificados;
     }
 
+    // Se eliminará
     @Override
     public boolean existe(@NonNull String palabra) {
+        try {
+            return existeLaPalabra(palabra);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // Se eliminará
+    @Override
+    public Optional<List<Significado>> getSignificados(@NonNull String palabra) {
+        ResultadoDeBusquedaDePalabra resultado = buscarPalabra(palabra);
+        if (resultado instanceof PalabraEncontrada encontrada) {
+            return Optional.of(encontrada.significados());
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean existeLaPalabra(@NonNull String palabra) throws Exception { 
         return palabrasYSignificados.containsKey(palabra);
     }
 
     @Override
-    public Optional<List<Significado>> getSignificados(@NonNull String palabra) {
-        //return existe(palabra) ? Optional.of(palabrasYSignificados.get(palabra)) : Optional.empty();
-        return Optional.ofNullable(palabrasYSignificados.get(palabra));
-        // Esto hace el if por nosotros.
-        // Si le pasamos nulo, devuelve Optional.empty()
-        // Si le pasamos un valor, devuelve Optional.of(valor)
+    public ResultadoDeBusquedaDePalabra buscarPalabra(@NonNull String palabra){
+        List<Significado> significados = palabrasYSignificados.get(palabra);
+        if(significados == null) {
+            return new PalabraNoEncontrada();
+        }
+        return new PalabraEncontrada(significados);
     }
+
 
 }

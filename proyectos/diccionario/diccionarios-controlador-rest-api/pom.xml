@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Proyecto independiente: ni hereda de diccionario-padre ni es módulo suyo.
+         Versiona a su ritmo; quien lo use, lo pide por versión. -->
+    <groupId>com.curso.diccionario</groupId>
+    <artifactId>diccionarios-controlador-rest-api</artifactId>
+    <version>1.0.0</version>
+    <name>Diccionarios - API del controlador REST</name>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-boot.version>4.1.0</spring-boot.version>
+        <!-- La que usa springdoc 3.1.0: así las anotaciones que pongo aquí son las que él lee. -->
+        <swagger-annotations.version>2.2.52</swagger-annotations.version>
+        <springdoc.version>3.1.0</springdoc.version>
+
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- BOM y no parent: esto es una librería, no una aplicación de Spring Boot. -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Solo anotaciones: el API no arrastra ni servidor web ni springdoc.
+         Eso lo decide la aplicación que monte el controlador. -->
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>${swagger-annotations.version}</version>
+        </dependency>
+
+        <!-- Solo para generar la spec al empaquetar: no viajan con el jar. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+            <version>${springdoc.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>generar-especificacion-openapi</id>
+                        <!-- prepare-package: después de compilar y antes del jar, para que la spec vaya dentro.
+                             No depende de surefire: -DskipTests la genera igual (-Dmaven.test.skip no,
+                             porque ni compila el generador). -->
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <!-- exec y no java: en una JVM aparte, no dentro de la de Maven. -->
+                            <executable>${java.home}/bin/java</executable>
+                            <classpathScope>test</classpathScope>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>com.curso.diccionario.controlador.rest.api.GeneradorDeEspecificacionOpenApi</argument>
+                                <!-- Suelta en target/ para verla, y en classes/ para que vaya dentro del jar. -->
+                                <argument>${project.build.directory}/openapi.yaml</argument>
+                                <argument>${project.build.outputDirectory}/openapi/diccionarios.yaml</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

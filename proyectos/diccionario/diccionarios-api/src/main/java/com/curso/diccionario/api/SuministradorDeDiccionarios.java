@@ -11,7 +11,12 @@ public interface SuministradorDeDiccionarios {
 
     // Existe aparte de getDiccionario porque una implementación puede saber qué idiomas
     // tiene sin llegar a cargar el diccionario.
+    @Deprecated(since = "1.1.0", forRemoval = true)
     boolean tienesDiccionarioDe(@NonNull String idioma); // Puede generar error
+
+    default boolean tienesDiccionarioDeIdioma(@NonNull String idioma) throws Exception{
+        return tienesDiccionarioDe(idioma);
+    } 
 
     @Deprecated(since = "1.1.0", forRemoval = true)
     Optional<Diccionario> getDiccionario(@NonNull String idioma); // Puede generar error
@@ -80,6 +85,7 @@ public interface SuministradorDeDiccionarios {
     // Y aparecen en JAVA los sealed classes (clases selladas) para resolver este problema:
 
     // public sealed interface LoginResultado permits LoginExito, LoginFallido, SistemaEnMantenimiento {}
+    
     // Si alguien intentase crear una nueva clase que implemente LoginResultado sin declararla en el permits, el compilador lanzaría un error.
     // Nadie puede crear un CuentaBloqueada sin declararla en el permits.
 

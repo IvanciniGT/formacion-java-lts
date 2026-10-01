@@ -1,0 +1,3 @@
+apis:
+  proyectos/diccionario/diccionarios-controlador-rest-api/target/openapi.yaml:
+    alias: servidor-de-diccionarios

@@ -26,7 +26,16 @@ public class BuscarPalabra {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("No se encontró un suministrador de diccionarios"));
 
-        new ProcesadorDePeticiones().procesarPeticion(args[0], args[1], suministrador);
+
+        try {
+            new ProcesadorDePeticiones().procesarPeticion(args[0], args[1], suministrador);
+        } catch (Exception e) {
+            System.out.println("Ocurrió un error al procesar la petición: " + e.getMessage());
+            System.out.println("Detalles del error:");
+            e.printStackTrace();
+            System.out.println("Inténtelo de nuevo más tarde.");
+            System.exit(2);
+        }
     }
 
 }

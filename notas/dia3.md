@@ -627,12 +627,12 @@ Además si hay incidencias hay que controlar (SOPORTE TECNICO) qué versión de 
 
         Cliente                                                     Servidor central de diccionarios
         ---------------------------------------------------         ----------------------------------------------
-        app -> diccionariosapi -> diccionarionario-impl-rest ->     controlador-rest ----->     diccionariosapi  -> diccionariosimplfichero
-                                                                                                        |
-                                                                                                        v
-                                                                                                ficheros de diccionarios en local
-                                                                                                    es.txt
-                                                                                                    en.txt
+        app -> diccionariosapi -> diccionarionario-impl-rest -> rest ->  controlador-rest ----->     diccionariosapi  -> diccionariosimplfichero
+                                                                 api                                                            |
+                                                                                                                                v
+                                                                                                                        ficheros de diccionarios en local
+                                                                                                                            es.txt
+                                                                                                                            en.txt
 
                                 Que pasa?
                              Sirve tal cual          No sirve para nada         Sirve pero con mofidicaciones
@@ -643,8 +643,21 @@ diccionariosimplfichero           √
 Necesito 2 piezas nuevas, pero no tengo que tocar ni una linea dde código existente.
 
 Estas piezas nuevas son:
-- diccionarionario-impl-rest
-- controlador-rest
+- diccionarionario-impl-rest          Transforma llamadas hechas mediante al api de diccionarios a peticiones http/rest
+- controlador-rest                    Transformar peticiones http/rest a llamadas al api de diccionarios
+
+Para hacer esto, ya que tenemos 2 componentes en comunicación, que es lo primero que debería definir? El api de comunicación.
+En nuestro caso, no es un api JAVA, sino un api HTTP/REST.
+Con que se definen los apis HTTP/Rest? Hay una especificación, antiguamente llamada Swagger(v1, v2), ahora conocida como OpenAPI (sería la v3 de swagger)
+Lo que pasa es que al final, lo que ponga en el swagger (documento json o yaml) es lo que debe ofrecer el controlado-rest...
+Y no quiero trabajar por duplicado... definiendo cosas en una spec y definiendo cosas en JAVA.
+Qué problema tiene esto? Varios:
+- Mantenibilidad: Un día cambiaré una cosa (JAVA) y me olvidaré de actualizar la spec (o viceversa)
+- Trabajo el doble
+- Además, puedo tener un error, y teclear mal un nombre, de forma que quede distinto en la spec y en el código.
+
+Aplicamos otro de lo grandes rincipios de desarrollo de software aqui: DRY (Don't Repeat Yourself)
+Lo que vamos a hacer es un API del Controlador REST (Spring)... Y Usar una librería que genere automáticamente la spec OpenAPI: Springdoc
 
 
     Version nueva:3.0.0
