@@ -69,6 +69,21 @@ public abstract class ContratoSuministradorDeDiccionariosTest extends ContratoBa
         assertEquals(List.of("ES"), idiomas);
     }
 
+    @Test
+    @DisplayName("Contexto: suministrador con ES y EN | Acción: pedir los idiomas con getIdiomasDisponibles | Resultado esperado: los mismos que getIdiomas")
+    void getIdiomasDisponiblesDiceLoMismoQueGetIdiomas() throws Exception {
+        // Contexto
+        SuministradorDeDiccionarios suministrador = crearSuministradorCon(datosHabituales());
+
+        // Acción
+        List<String> disponibles = suministrador.getIdiomasDisponibles();
+
+        // Resultado esperado
+        // El nuevo solo cambia cómo se informa de un error: sin errores, la respuesta es la misma.
+        assertEquals(new HashSet<>(suministrador.getIdiomas()), new HashSet<>(disponibles));
+        assertEquals(2, disponibles.size(), "No debe repetir idiomas: " + disponibles);
+    }
+
     // ------------------------------------------------------- tienesDiccionarioDe
 
     @Test

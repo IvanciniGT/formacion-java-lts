@@ -1,41 +1,28 @@
 package com.curso.diccionario.app.consola;
 
+import java.util.List;
 import java.util.ServiceLoader;
 
 import com.curso.diccionario.api.SuministradorDeDiccionarios;
+import com.curso.diccionario.ui.consola.api.FabricaDeInterfacesDeUsuario;
+import com.curso.diccionario.ui.consola.api.InterfazDeUsuario;
 
+// Sin lógica: solo monta las piezas y se las pasa al procesador.
 public class BuscarPalabra {
 
     public static void main(String[] args) {
-        if (args.length < 2) {
-            System.out.println("""
-                    Faltan argumentos.
-                    La forma correcta de invocar el programa es:
+        // El único sitio que decide qué implementaciones se usan, y ni siquiera las nombra:
+        // las que haya en el module path.
+        InterfazDeUsuario interfaz = cargar(FabricaDeInterfacesDeUsuario.class).crear(List.of(args));
+        SuministradorDeDiccionarios suministrador = cargar(SuministradorDeDiccionarios.class);
 
-                        $ buscarPalabra <IDIOMA> <PALABRA>
+        System.exit(new ProcesadorDePeticiones(interfaz, suministrador).procesarPeticion());
+    }
 
-                    Ejemplo:
-
-                        $ buscarPalabra ES melón""");
-            System.exit(1);
-        }
-
-        // El único sitio que decide qué implementación se usa, y ni siquiera la nombra:
-        // la que haya en el module path.
-        SuministradorDeDiccionarios suministrador = ServiceLoader.load(SuministradorDeDiccionarios.class)
+    private static <T> T cargar(Class<T> tipo) {
+        return ServiceLoader.load(tipo)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No se encontró un suministrador de diccionarios"));
-
-
-        try {
-            new ProcesadorDePeticiones().procesarPeticion(args[0], args[1], suministrador);
-        } catch (Exception e) {
-            System.out.println("Ocurrió un error al procesar la petición: " + e.getMessage());
-            System.out.println("Detalles del error:");
-            e.printStackTrace();
-            System.out.println("Inténtelo de nuevo más tarde.");
-            System.exit(2);
-        }
+                .orElseThrow(() -> new IllegalStateException("No hay ninguna implementación de " + tipo.getSimpleName() + " en el module path"));
     }
 
 }

@@ -32,11 +32,11 @@ class FicherosDePruebaTest {
     Path carpeta;
 
     @Test
-    @DisplayName("Contexto: los datos habituales y diccionarios/es.txt escrito a mano | Acción: generar los ficheros | Resultado esperado: el es.txt generado es idéntico al escrito a mano")
+    @DisplayName("Contexto: los datos habituales y META-INF/diccionarios/es.txt escrito a mano | Acción: generar los ficheros | Resultado esperado: el es.txt generado es idéntico al escrito a mano")
     void elGeneradorEscribeElFormatoReal() throws IOException {
         // Contexto
         DatosDePrueba datos = ContratoBase.datosHabituales();
-        List<String> escritoAMano = leerRecurso("/diccionarios/es.txt");
+        List<String> escritoAMano = leerRecurso("/META-INF/diccionarios/es.txt");
 
         // Acción
         FicherosDePrueba.escribir(datos, carpeta);

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.curso.diccionario</groupId>
+        <artifactId>diccionario-padre</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <!-- Solo datos: el fichero del diccionario y el índice que anuncia su idioma.
+         Versiona a su ritmo: corregir una definición es una versión del diccionario, no de la aplicación.
+         Los ficheros los genera herramientas/GeneradorDeDiccionarios.java. -->
+    <artifactId>diccionario-en</artifactId>
+    <version>1.0.0</version>
+    <name>Diccionario - inglés</name>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <!-- En el module path, sin module-info, el nombre saldría del fichero del jar. -->
+                            <Automatic-Module-Name>diccionarios.en</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -13,31 +13,46 @@
 
     <groupId>com.curso.diccionario</groupId>
     <artifactId>diccionario-app-servidor</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>Diccionario - Servidor REST</name>
 
     <properties>
         <java.version>17</java.version>
         <springdoc.version>3.1.0</springdoc.version>
+        <!-- El parent de Spring Boot 4 ya no gestiona su versión. -->
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.curso.diccionario</groupId>
             <artifactId>diccionarios-controlador-rest</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>com.curso.diccionario</groupId>
             <artifactId>diccionarios-api</artifactId>
-            <version>1.1.0</version>
+            <version>1.2.0</version>
         </dependency>
         <!-- compile y no runtime como en la app de consola: aquí no hay ServiceLoader,
              la configuración crea la implementación con new y por eso la tiene que ver. -->
         <dependency>
             <groupId>com.curso.diccionario</groupId>
             <artifactId>diccionarios-impl-fichero</artifactId>
-            <version>1.1.0</version>
+            <version>1.2.0</version>
+        </dependency>
+        <!-- Un jar por idioma: los idiomas que sirve el servidor son los jars que lleva. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionario-es</artifactId>
+            <version>1.0.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionario-en</artifactId>
+            <version>1.0.0</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -50,7 +65,51 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Para probar que el cliente web cumple el contrato del API contra este servidor de verdad. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-impl-web-service</artifactId>
+            <version>1.1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-api</artifactId>
+            <version>1.2.0</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <!-- Por defecto el servidor lee los ficheros de los jars de idioma en memoria.
+         Con el perfil bbdd, los carga en una BBDD H2 al arrancar y consulta ahí, sin tocar este fichero
+         ni una línea de código: el módulo de BBDD trae su autoconfiguración.
+
+             mvn spring-boot:run              ficheros
+             mvn spring-boot:run -Pbbdd       BBDD (en ./datos/, ver application.properties) -->
+    <profiles>
+        <profile>
+            <id>bbdd</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.curso.diccionario</groupId>
+                    <artifactId>diccionarios-impl-bbdd</artifactId>
+                    <version>1.0.0</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.h2database</groupId>
+                    <artifactId>h2</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
@@ -63,6 +122,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                     <executable>${java.home}/bin/java</executable>

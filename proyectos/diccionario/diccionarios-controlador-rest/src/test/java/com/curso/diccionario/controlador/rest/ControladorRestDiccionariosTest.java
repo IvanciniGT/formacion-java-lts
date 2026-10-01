@@ -47,11 +47,20 @@ class ControladorRestDiccionariosTest {
 
     @Test
     void listaLosIdiomas() throws Exception {
-        when(suministrador.getIdiomas()).thenReturn(List.of("ES", "EN"));
+        when(suministrador.getIdiomasDisponibles()).thenReturn(List.of("ES", "EN"));
 
         mvc.perform(get("/api/v1/diccionarios"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[\"ES\",\"EN\"]", true));
+    }
+
+    @Test
+    void unErrorAlListarLosIdiomasDa500YNoUnaListaVacia() throws Exception {
+        when(suministrador.getIdiomasDisponibles()).thenThrow(new IOException("carpeta ilegible"));
+
+        mvc.perform(get("/api/v1/diccionarios"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.codigo").value("ERROR_INTERNO"));
     }
 
     @Test

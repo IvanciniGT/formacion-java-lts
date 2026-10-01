@@ -32,7 +32,13 @@ public class ControladorRestDiccionarios implements ApiRestDiccionarios {
 
     @Override
     public List<String> listarIdiomas() {
-        return suministrador.getIdiomas();
+        // getIdiomasDisponibles y no getIdiomas: un fallo tiene que llegar al cliente como 500,
+        // no como una lista vacía que parezca "no hay idiomas".
+        try {
+            return suministrador.getIdiomasDisponibles();
+        } catch (Exception e) {
+            throw new ErrorAlConsultarDiccionarioException("Error al obtener los idiomas", e);
+        }
     }
 
     @Override

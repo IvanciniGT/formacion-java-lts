@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Proyecto independiente, como el controlador: necesita Spring (Data JPA), así que no es un
+         módulo JPMS ni hereda de diccionario-padre. Se enchufa en el servidor solo con añadirlo:
+         trae su propia autoconfiguración. -->
+    <groupId>com.curso.diccionario</groupId>
+    <artifactId>diccionarios-impl-bbdd</artifactId>
+    <version>1.0.0</version>
+    <name>Diccionarios - Implementación en BBDD (Spring Data JPA)</name>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-boot.version>4.1.0</spring-boot.version>
+
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+        <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- BOM y no parent: esto es una librería, no una aplicación de Spring Boot. -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-api</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+        <!-- Por el formato de fichero y el catálogo del classpath: los mismos ficheros, leídos igual. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-impl-fichero</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <!-- Sin driver: qué BBDD usar lo decide la aplicación (hoy H2, mañana otra). -->
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Las pruebas de contrato del API: esta implementación también tiene que cumplirlas. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-api</artifactId>
+            <version>1.2.0</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+            </plugin>
+            <!-- Este proyecto no es un módulo de diccionario-padre, pero el agregador lo incluye:
+                 sin esto, `mvn package exec:exec` desde la raíz falla aquí por no tener nada que lanzar. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                    <executable>${java.home}/bin/java</executable>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

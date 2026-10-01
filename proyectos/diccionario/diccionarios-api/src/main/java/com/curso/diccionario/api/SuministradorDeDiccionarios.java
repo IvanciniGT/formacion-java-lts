@@ -7,7 +7,16 @@ import lombok.NonNull;
 
 public interface SuministradorDeDiccionarios {
 
+    // Sin throws, un fallo (servidor caído, carpeta ilegible) solo se puede disfrazar de lista vacía,
+    // y "no hay idiomas" no se distingue de "no he podido averiguarlo".
+    @Deprecated(since = "1.2.0", forRemoval = true)
     List<String> getIdiomas(); // Puede generar error
+
+    // Mismo camino que en la 1.1.0: método nuevo con default que delega en el viejo,
+    // así las implementaciones existentes siguen compilando y esto es un minor (1.2.0).
+    default List<String> getIdiomasDisponibles() throws Exception {
+        return getIdiomas();
+    }
 
     // Existe aparte de getDiccionario porque una implementación puede saber qué idiomas
     // tiene sin llegar a cargar el diccionario.

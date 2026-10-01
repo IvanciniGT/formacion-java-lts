@@ -54,20 +54,26 @@ public class SuministradorDeDiccionariosDesdeServicioWeb implements Suministrado
         }
     }
 
+    // Esta se borrará!
     @Override
     public List<String> getIdiomas() {
         try {
-            HttpResponse<String> respuesta = cliente.get(cliente.rutaDeDiccionarios());
-            // Sin mirar el status, el JSON de un error se intentaría leer como lista de idiomas.
-            if (respuesta.statusCode() != 200) {
-                throw cliente.respuestaInesperada(respuesta);
-            }
-            return cliente.leer(respuesta, LISTA_DE_IDIOMAS);
+            return getIdiomasDisponibles();
         } catch (ErrorDelServidorDeDiccionariosException e) {
             System.err.println("Error al obtener los idiomas: " + e.getMessage());
-            // TODO: Modificar api para lanzar una excepción en lugar de devolver una lista vacía
             return List.of();
         }
+    }
+
+    // Desde la 1.2.0 del API, el error llega a quien pregunta en vez de disfrazarse de lista vacía.
+    @Override
+    public List<String> getIdiomasDisponibles() throws ErrorDelServidorDeDiccionariosException {
+        HttpResponse<String> respuesta = cliente.get(cliente.rutaDeDiccionarios());
+        // Sin mirar el status, el JSON de un error se intentaría leer como lista de idiomas.
+        if (respuesta.statusCode() != 200) {
+            throw cliente.respuestaInesperada(respuesta);
+        }
+        return cliente.leer(respuesta, LISTA_DE_IDIOMAS);
     }
 
     @Override

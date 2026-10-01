@@ -10,33 +10,83 @@
     </parent>
 
     <artifactId>diccionario-app-console</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <name>Diccionario - App de consola</name>
 
     <dependencies>
         <dependency>
             <groupId>com.curso.diccionario</groupId>
             <artifactId>diccionarios-api</artifactId>
-            <version>1.1.0</version>
+            <version>1.2.0</version>
         </dependency>
-        <!-- runtime y no compile: si alguien importa una clase de la implementación,
-             que no compile. La app solo la conoce a través del ServiceLoader. -->
-        <!--<dependency>
-            <groupId>com.curso.diccionario</groupId>
-            <artifactId>diccionarios-impl-fichero</artifactId>
-            <version>1.1.0</version>
-            <scope>runtime</scope>
-        </dependency>-->
         <dependency>
             <groupId>com.curso.diccionario</groupId>
-            <artifactId>diccionarios-impl-web-service</artifactId>
+            <artifactId>ui-consola-api</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <!-- runtime y no compile: si alguien importa una clase de una implementación,
+             que no compile. La app solo las conoce a través del ServiceLoader. -->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>ui-consola-impl</artifactId>
             <version>1.0.0</version>
             <scope>runtime</scope>
         </dependency>
     </dependencies>
 
+    <!-- Qué implementación de diccionarios lleva la app. Se elige al construir, sin tocar este fichero:
+
+             mvn package exec:exec -Dargumentos="ES melón"                   ficheros (por defecto)
+             mvn package exec:exec -Pservicio-web -Dargumentos="ES melón"    contra el servidor REST
+
+         Excluyentes a propósito: con dos implementaciones en el module path, el ServiceLoader
+         se queda con la primera que encuentra y no sabes cuál. activeByDefault se desactiva
+         solo en cuanto se pide otro perfil con -P. -->
+    <profiles>
+        <profile>
+            <id>ficheros</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.curso.diccionario</groupId>
+                    <artifactId>diccionarios-impl-fichero</artifactId>
+                    <version>1.2.0</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <!-- Un jar por idioma: quitar uno es quitar el idioma, sin configurar nada más. -->
+                <dependency>
+                    <groupId>com.curso.diccionario</groupId>
+                    <artifactId>diccionario-es</artifactId>
+                    <version>1.0.0</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.curso.diccionario</groupId>
+                    <artifactId>diccionario-en</artifactId>
+                    <version>1.0.0</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <!-- Los diccionarios los tiene el servidor: aquí no va ninguno.
+                 Servidor en DICCIONARIOS_SERVIDOR (por defecto http://localhost:8080). -->
+            <id>servicio-web</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.curso.diccionario</groupId>
+                    <artifactId>diccionarios-impl-web-service</artifactId>
+                    <version>1.1.0</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <properties>
-        <!-- mvn exec:exec -Dargumentos="ES melón" -->
+        <!-- mvn exec:exec -Dargumentos="ES melón" (ver los perfiles) -->
         <argumentos></argumentos>
     </properties>
 

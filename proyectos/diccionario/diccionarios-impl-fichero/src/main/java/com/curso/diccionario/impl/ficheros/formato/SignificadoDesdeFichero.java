@@ -1,4 +1,4 @@
-package com.curso.diccionario.impl.ficheros;
+package com.curso.diccionario.impl.ficheros.formato;
 
 import java.util.List;
 

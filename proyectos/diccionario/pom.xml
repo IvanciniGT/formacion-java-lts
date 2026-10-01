@@ -13,11 +13,16 @@
     <modules>
         <module>diccionarios-api</module>
         <module>diccionarios-impl-fichero</module>
+        <module>diccionario-es</module>
+        <module>diccionario-en</module>
+        <module>ui-consola-api</module>
+        <module>ui-consola-impl</module>
         <module>diccionario-app-console</module>
         <module>diccionarios-impl-web-service</module>
         <module>diccionario-app-servidor</module>
         <module>diccionarios-controlador-rest</module>
         <module>diccionarios-controlador-rest-api</module>
+        <module>diccionarios-impl-bbdd</module>
     </modules>
 
     <properties>
