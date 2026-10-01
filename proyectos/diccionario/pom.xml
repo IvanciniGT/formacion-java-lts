@@ -14,6 +14,10 @@
         <module>diccionarios-api</module>
         <module>diccionarios-impl-fichero</module>
         <module>diccionario-app-console</module>
+        <module>diccionarios-impl-web-service</module>
+        <module>diccionario-app-servidor</module>
+        <module>diccionarios-controlador-rest</module>
+        <module>diccionarios-controlador-rest-api</module>
     </modules>
 
     <properties>

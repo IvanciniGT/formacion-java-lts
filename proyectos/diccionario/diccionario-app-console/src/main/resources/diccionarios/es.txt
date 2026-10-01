@@ -5,3 +5,4 @@ gato=Mamífero felino doméstico.(El gato duerme en el sofá)|Herramienta para l
 hoja=Órgano verde y plano de las plantas.(En otoño se caen las hojas)|Lámina de papel.(Dame una hoja para apuntarlo)|Cuchilla de un arma o herramienta.(La hoja del cuchillo está mellada)
 sierra=Herramienta con una hoja dentada para cortar.(Corta la tabla con la sierra)|Cordillera de montes.(Pasamos el fin de semana en la sierra)
 cabo=Extremo de una cosa.(Ata los dos cabos de la cuerda)|Lengua de tierra que entra en el mar.(Llegamos al cabo de Gata)|Militar de rango inmediatamente superior al soldado.(El cabo pasó revista)
+consola=Dispositivo de videojuegos.(Compré una nueva consola)|Mueble con cajones y estantes.(Guardé los documentos en la consola)

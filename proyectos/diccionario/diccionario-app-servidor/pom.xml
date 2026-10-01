@@ -58,6 +58,16 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- Este proyecto no es un módulo de diccionario-padre, pero el agregador lo incluye:
+                 sin esto, `mvn package exec:exec` desde la raíz falla aquí por no tener nada que lanzar. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                    <executable>${java.home}/bin/java</executable>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

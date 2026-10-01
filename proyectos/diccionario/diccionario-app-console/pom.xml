@@ -21,10 +21,16 @@
         </dependency>
         <!-- runtime y no compile: si alguien importa una clase de la implementación,
              que no compile. La app solo la conoce a través del ServiceLoader. -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.curso.diccionario</groupId>
             <artifactId>diccionarios-impl-fichero</artifactId>
             <version>1.1.0</version>
+            <scope>runtime</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>com.curso.diccionario</groupId>
+            <artifactId>diccionarios-impl-web-service</artifactId>
+            <version>1.0.0</version>
             <scope>runtime</scope>
         </dependency>
     </dependencies>
